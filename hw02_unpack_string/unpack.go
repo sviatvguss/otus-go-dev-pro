@@ -3,33 +3,40 @@ package hw02unpackstring
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"unicode"
 )
 
 var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(str string) (string, error) {
-	input := []rune(str)
-	result := make([]rune, 0, len(str)*2)
+	var sb strings.Builder
+	var prevLetter bool
 	var prev rune
-	for i, v := range input {
-		if unicode.IsLetter(v) {
-			result = append(result, v)
-		} else if unicode.IsDigit(v) {
-			if i == 0 || unicode.IsDigit(prev) {
+	for i, v := range str {
+		switch {
+		case unicode.IsLetter(v):
+			if prevLetter {
+				sb.WriteRune(prev)
+			}
+			prevLetter = true
+		case unicode.IsDigit(v):
+			if i == 0 || !prevLetter {
 				return "", ErrInvalidString
 			}
+			prevLetter = false
 			count, _ := strconv.Atoi(string(v))
 			if count == 0 {
-				last := len(result) - 1
-				result = result[0:last]
-			} else if count > 0 {
-				for i := 0; i < count-1; i++ {
-					result = append(result, prev)
-				}
+				prev = v
+				continue
+			} else {
+				sb.WriteString(strings.Repeat(string(prev), count))
 			}
 		}
 		prev = v
 	}
-	return string(result), nil
+	if prevLetter {
+		sb.WriteRune(prev)
+	}
+	return sb.String(), nil
 }
