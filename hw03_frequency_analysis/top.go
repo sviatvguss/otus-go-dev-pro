@@ -10,6 +10,8 @@ type freqDict struct {
 	Count int
 }
 
+const LEN = 10
+
 func Top10(input string) []string {
 	dict := make(map[string]int)
 	for _, w := range strings.Fields(input) {
@@ -27,13 +29,13 @@ func Top10(input string) []string {
 		return words[i].Count > words[j].Count
 	})
 
-	end := 10
-	if len(words) < 10 {
+	end := LEN
+	if len(words) < end {
 		end = len(words)
 	}
 	result := make([]string, end)
 	for i, w := range words {
-		if i == 10 {
+		if i == end {
 			break
 		}
 		result[i] = w.Word
