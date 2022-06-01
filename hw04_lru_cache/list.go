@@ -71,14 +71,15 @@ func (l *list) PushBack(v interface{}) *ListItem {
 }
 
 func (l *list) Remove(i *ListItem) {
-	if i.Next != nil && i.Prev != nil { // not front, not back
+	switch {
+	case i.Next != nil && i.Prev != nil: // not front, not back
 		i.Prev.Next, i.Next.Prev = i.Next, i.Prev
-	} else if i.Next == nil && i.Prev == nil { // front is back
+	case i.Next == nil && i.Prev == nil: // front is back
 		l.front, l.back = nil, nil
-	} else if i.Next == nil { // back
+	case i.Next == nil: // back
 		i.Prev.Next = nil
 		l.back = i.Prev
-	} else if i.Prev == nil { // front
+	case i.Prev == nil: // front
 		i.Next.Prev = nil
 		l.front = i.Next
 	}
