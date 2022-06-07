@@ -15,6 +15,27 @@ func TestList(t *testing.T) {
 		require.Nil(t, l.Back())
 	})
 
+	t.Run("remove item from the middle", func(t *testing.T) {
+		l := NewList()
+		var midItem *ListItem
+		values := [...]int{1, 2, 3, 4, 5, 6, 7}
+		midNum := len(values) / 2
+		for i, v := range values {
+			if i == midNum {
+				midItem = l.PushBack(v)
+			} else {
+				l.PushBack(v)
+			}
+		}
+		l.Remove(midItem)
+
+		elems := make([]int, 0, l.Len())
+		for i := l.Front(); i != nil; i = i.Next {
+			elems = append(elems, i.Value.(int))
+		}
+		require.Equal(t, []int{1, 2, 3, 5, 6, 7}, elems)
+	})
+
 	t.Run("complex", func(t *testing.T) {
 		l := NewList()
 
