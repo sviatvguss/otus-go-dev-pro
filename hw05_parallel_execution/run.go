@@ -14,8 +14,13 @@ func Run(tasks []Task, n, m int) error {
 	tasksCh := make(chan Task, n)
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
+	var ignoreErrors bool
 	mu := sync.Mutex{}
 	wg := &sync.WaitGroup{}
+
+	if m <= 0 {
+		ignoreErrors = true
+	}
 
 	go func() {
 		defer close(tasksCh)
@@ -25,25 +30,30 @@ func Run(tasks []Task, n, m int) error {
 	}()
 
 	for task := range tasksCh {
-		task := task
+		t := task
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := task()
-			if m > 0 {
+			if ignoreErrors {
+				_ = t()
+			} else {
+				err := t()
 				if err != nil {
-					if m > 1 {
-						mu.Lock()
-						m--
-						mu.Unlock()
-					} else {
-						select {
-						case stopCh <- struct{}{}:
-						default:
+					mu.Lock()
+					defer mu.Unlock()
+					if m > 0 {
+						if m > 1 {
+							m--
+						} else {
+							select {
+							case stopCh <- struct{}{}:
+							default:
+							}
 						}
 					}
 				}
 			}
+
 		}()
 	}
 
