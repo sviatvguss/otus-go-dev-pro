@@ -93,5 +93,14 @@ func TestRun(t *testing.T) {
 		err := Run(tasks, workersCount, maxErrorsCount)
 		require.NoError(t, err)
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
+
+		runTasksCount = 0
+		workersCount = 58
+		maxErrorsCount = 0
+
+		err = Run(tasks, workersCount, maxErrorsCount)
+		require.NoError(t, err)
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
+
 	})
 }
