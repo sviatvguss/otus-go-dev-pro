@@ -35,10 +35,7 @@ func Run(tasks []Task, n, m int) error {
 		go func() {
 			defer wg.Done()
 			err := t()
-			if ignoreErrors {
-				return
-			}
-			if err != nil {
+			if err != nil && !ignoreErrors {
 				mu.Lock()
 				defer mu.Unlock()
 				if m > 0 {
