@@ -1,6 +1,3 @@
-//go:build !race
-// +build !race
-
 package hw05parallelexecution
 
 import (
@@ -73,7 +70,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("ignore errors", func(t *testing.T) {
-		tasksCount := 48
+		tasksCount := 17
 		tasks := make([]Task, 0, tasksCount)
 
 		var runTasksCount int32
@@ -87,18 +84,10 @@ func TestRun(t *testing.T) {
 			})
 		}
 
-		workersCount := 3
-		maxErrorsCount := -7
+		workersCount := 4
+		maxErrorsCount := 0
 
 		err := Run(tasks, workersCount, maxErrorsCount)
-		require.NoError(t, err)
-		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
-
-		runTasksCount = 0
-		workersCount = 58
-		maxErrorsCount = 0
-
-		err = Run(tasks, workersCount, maxErrorsCount)
 		require.NoError(t, err)
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
 	})
