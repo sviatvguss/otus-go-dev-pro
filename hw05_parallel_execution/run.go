@@ -34,26 +34,24 @@ func Run(tasks []Task, n, m int) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			err := t()
 			if ignoreErrors {
-				_ = t()
-			} else {
-				err := t()
-				if err != nil {
-					mu.Lock()
-					defer mu.Unlock()
-					if m > 0 {
-						if m > 1 {
-							m--
-						} else {
-							select {
-							case stopCh <- struct{}{}:
-							default:
-							}
+				return
+			}
+			if err != nil {
+				mu.Lock()
+				defer mu.Unlock()
+				if m > 0 {
+					if m > 1 {
+						m--
+					} else {
+						select {
+						case stopCh <- struct{}{}:
+						default:
 						}
 					}
 				}
 			}
-
 		}()
 	}
 
