@@ -30,14 +30,13 @@ func Run(tasks []Task, n, m int) error {
 	}()
 
 	for task := range tasksCh {
-		t := task
 		wg.Add(1)
-		go func() {
+		go func(t Task) {
 			defer wg.Done()
 			err := t()
+			mu.Lock()
+			defer mu.Unlock()
 			if err != nil && !ignoreErrors {
-				mu.Lock()
-				defer mu.Unlock()
 				if m > 0 {
 					if m > 1 {
 						m--
@@ -49,7 +48,7 @@ func Run(tasks []Task, n, m int) error {
 					}
 				}
 			}
-		}()
+		}(task)
 	}
 
 	go func() {
