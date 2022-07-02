@@ -40,7 +40,6 @@ func main() {
 		}
 	}()
 
-	// create and start new bar
 	len := <-cp
 	bar := pb.StartNew(int(len))
 	for {

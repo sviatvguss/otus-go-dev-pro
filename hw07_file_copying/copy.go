@@ -35,10 +35,31 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 	defer to.Close()
 
-	buffSize := len / 10
-	cp <- len
+	from.Seek(offset, 0)
+	var buffSize, bytesCount int64
+	if limit != 0 {
+		bytesCount = limit
+	} else {
+		bytesCount = len - offset
+	}
+	if bytesCount < 10 {
+		buffSize = bytesCount
+	} else {
+		buffSize = bytesCount / 10
+	}
+	if limit != 0 {
+		if limit > len-offset {
+			cp <- len - offset
+		} else {
+			cp <- limit
+		}
+	} else {
+		cp <- bytesCount
+	}
+
 	close(cp)
 	buf := make([]byte, buffSize)
+	var limitCounter int
 	for {
 		n, err := from.Read(buf)
 		if err != nil && err != io.EOF {
@@ -47,11 +68,20 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		if n == 0 {
 			break
 		}
+		if limit != 0 {
+			limitCounter += n
+			if limitCounter > int(limit) {
+				n -= limitCounter - int(limit)
+			}
+		}
 		wn, err := to.Write(buf[:n])
 		if err != nil {
 			return err
 		}
 		step <- wn
+		if limitCounter > int(limit) {
+			break
+		}
 	}
 	close(step)
 	done <- struct{}{}
