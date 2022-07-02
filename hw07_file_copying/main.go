@@ -12,8 +12,8 @@ var (
 	limit, offset int64
 )
 
-var cp chan int
-var step chan struct{}
+var cp chan int64
+var step chan int
 var done chan struct{}
 
 func init() {
@@ -28,24 +28,26 @@ func main() {
 	// Place your code here.
 	fmt.Printf("from = %v, to = %v, limit = %v, offset = %v\n", from, to, limit, offset)
 
-	cp = make(chan int)
-	step = make(chan struct{})
+	cp = make(chan int64)
+	step = make(chan int)
 	done = make(chan struct{})
 	go func() {
 		err := Copy(from, to, offset, limit)
 		if err != nil {
-
+			fmt.Println(fmt.Errorf("An error occured: %w", err))
+			done <- struct{}{}
+			return
 		}
 	}()
 
 	// create and start new bar
-	bar := pb.StartNew(<-cp)
-
+	len := <-cp
+	bar := pb.StartNew(int(len))
 	for {
 		select {
-		case _, ok := <-step:
+		case v, ok := <-step:
 			if ok {
-				bar.Increment()
+				bar.Add(v)
 			}
 		case <-done:
 			bar.Finish()
