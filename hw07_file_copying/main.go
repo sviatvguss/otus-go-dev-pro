@@ -13,9 +13,9 @@ var (
 )
 
 var (
-	cp   chan int64
-	step chan int
-	done chan struct{}
+	count chan int64
+	step  chan int64
+	done  chan struct{}
 )
 
 func init() {
@@ -28,9 +28,10 @@ func init() {
 func main() {
 	flag.Parse()
 
-	cp = make(chan int64)
-	step = make(chan int)
+	count = make(chan int64)
+	step = make(chan int64)
 	done = make(chan struct{})
+
 	go func() {
 		err := Copy(from, to, offset, limit)
 		if err != nil {
@@ -40,13 +41,14 @@ func main() {
 		}
 	}()
 
-	bytesCount := <-cp
+	bytesCount := <-count
 	bar := pb.StartNew(int(bytesCount))
+	bar.SetTemplate(pb.Simple)
 	for {
 		select {
 		case v, ok := <-step:
 			if ok {
-				bar.Add(v)
+				bar.Add(int(v))
 			}
 		case <-done:
 			bar.Finish()

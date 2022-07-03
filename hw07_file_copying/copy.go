@@ -33,34 +33,14 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return err
 	}
 	defer to.Close()
-
 	from.Seek(offset, 0)
-	var buffSize, bytesCount int64
-	if limit != 0 {
-		bytesCount = limit
-	} else {
-		bytesCount = info.Size() - offset
-	}
-	if bytesCount < 10 {
-		buffSize = bytesCount
-	} else {
-		buffSize = bytesCount / 10
+
+	buf, bytesToWrite := getBuffer(info.Size())
+
+	if count != nil {
+		sendToProgressBar(info.Size(), bytesToWrite)
 	}
 
-	if cp != nil {
-		defer close(cp)
-		if limit != 0 {
-			if limit > info.Size()-offset {
-				cp <- info.Size() - offset
-			} else {
-				cp <- limit
-			}
-		} else {
-			cp <- bytesCount
-		}
-	}
-
-	buf := make([]byte, buffSize)
 	var limitCounter int
 	for {
 		n, err := from.Read(buf)
@@ -81,7 +61,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 			return err
 		}
 		if step != nil {
-			step <- wn
+			step <- int64(wn)
 		}
 		if limit != 0 && limitCounter > int(limit) {
 			break
@@ -93,4 +73,35 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 
 	return nil
+}
+
+func getBuffer(fileSize int64) (buf []byte, bytesCount int64) {
+	if limit != 0 {
+		bytesCount = limit
+	} else {
+		bytesCount = fileSize - offset
+	}
+
+	var buffSize int64
+	if bytesCount < 10 {
+		buffSize = bytesCount
+	} else {
+		buffSize = bytesCount / 10
+	}
+	buf = make([]byte, buffSize)
+	return
+}
+
+func sendToProgressBar(fileSize, bytesCount int64) {
+	defer close(count)
+	switch {
+	case limit != 0:
+		if limit > fileSize-offset {
+			count <- fileSize - offset
+		} else {
+			count <- limit
+		}
+	default:
+		count <- bytesCount
+	}
 }
