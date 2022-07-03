@@ -47,17 +47,19 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	} else {
 		buffSize = bytesCount / 10
 	}
-	if limit != 0 {
-		if limit > len-offset {
-			cp <- len - offset
+	if cp != nil {
+		if limit != 0 {
+			if limit > len-offset {
+				cp <- len - offset
+			} else {
+				cp <- limit
+			}
 		} else {
-			cp <- limit
+			cp <- bytesCount
 		}
-	} else {
-		cp <- bytesCount
+		close(cp)
 	}
 
-	close(cp)
 	buf := make([]byte, buffSize)
 	var limitCounter int
 	for {
@@ -78,13 +80,17 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		if err != nil {
 			return err
 		}
-		step <- wn
+		if step != nil {
+			step <- wn
+		}
 		if limitCounter > int(limit) {
 			break
 		}
 	}
-	close(step)
-	done <- struct{}{}
+	if step != nil && done != nil {
+		close(step)
+		done <- struct{}{}
+	}
 
 	// Place your code here.
 	return nil
