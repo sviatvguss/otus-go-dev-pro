@@ -20,11 +20,10 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if err != nil {
 		return err
 	}
-	len := info.Size()
 	switch {
 	case !info.Mode().IsRegular():
 		return ErrUnsupportedFile
-	case len < offset:
+	case info.Size() < offset:
 		return ErrOffsetExceedsFileSize
 	}
 	defer from.Close()
@@ -40,31 +39,32 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if limit != 0 {
 		bytesCount = limit
 	} else {
-		bytesCount = len - offset
+		bytesCount = info.Size() - offset
 	}
 	if bytesCount < 10 {
 		buffSize = bytesCount
 	} else {
 		buffSize = bytesCount / 10
 	}
+
 	if cp != nil {
+		defer close(cp)
 		if limit != 0 {
-			if limit > len-offset {
-				cp <- len - offset
+			if limit > info.Size()-offset {
+				cp <- info.Size() - offset
 			} else {
 				cp <- limit
 			}
 		} else {
 			cp <- bytesCount
 		}
-		close(cp)
 	}
 
 	buf := make([]byte, buffSize)
 	var limitCounter int
 	for {
 		n, err := from.Read(buf)
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
 		if n == 0 {
@@ -83,7 +83,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		if step != nil {
 			step <- wn
 		}
-		if limitCounter > int(limit) {
+		if limit != 0 && limitCounter > int(limit) {
 			break
 		}
 	}
@@ -92,6 +92,5 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		done <- struct{}{}
 	}
 
-	// Place your code here.
 	return nil
 }

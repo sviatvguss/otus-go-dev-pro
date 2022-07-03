@@ -12,9 +12,11 @@ var (
 	limit, offset int64
 )
 
-var cp chan int64
-var step chan int
-var done chan struct{}
+var (
+	cp   chan int64
+	step chan int
+	done chan struct{}
+)
 
 func init() {
 	flag.StringVar(&from, "from", "", "file to read from")
@@ -25,8 +27,6 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
-	fmt.Printf("from = %v, to = %v, limit = %v, offset = %v\n", from, to, limit, offset)
 
 	cp = make(chan int64)
 	step = make(chan int)
@@ -34,14 +34,14 @@ func main() {
 	go func() {
 		err := Copy(from, to, offset, limit)
 		if err != nil {
-			fmt.Println(fmt.Errorf("An error occured: %w", err))
+			fmt.Println(fmt.Errorf("an error occurred: %w", err))
 			done <- struct{}{}
 			return
 		}
 	}()
 
-	len := <-cp
-	bar := pb.StartNew(int(len))
+	bytesCount := <-cp
+	bar := pb.StartNew(int(bytesCount))
 	for {
 		select {
 		case v, ok := <-step:
