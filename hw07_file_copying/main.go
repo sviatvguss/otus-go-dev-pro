@@ -2,11 +2,20 @@ package main
 
 import (
 	"flag"
+	"fmt"
+
+	"github.com/cheggaaa/pb/v3"
 )
 
 var (
 	from, to      string
 	limit, offset int64
+)
+
+var (
+	count chan int64
+	step  chan int64
+	done  chan struct{}
 )
 
 func init() {
@@ -18,5 +27,32 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	count = make(chan int64)
+	step = make(chan int64)
+	done = make(chan struct{})
+
+	go func() {
+		err := Copy(from, to, offset, limit)
+		if err != nil {
+			fmt.Println(fmt.Errorf("an error occurred: %w", err))
+			done <- struct{}{}
+			return
+		}
+	}()
+
+	bytesCount := <-count
+	bar := pb.StartNew(int(bytesCount))
+	bar.SetTemplate(pb.Simple)
+	for {
+		select {
+		case v, ok := <-step:
+			if ok {
+				bar.Add(int(v))
+			}
+		case <-done:
+			bar.Finish()
+			return
+		}
+	}
 }
