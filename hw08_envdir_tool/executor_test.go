@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/zenizh/go-capturer"
+	capturer "github.com/zenizh/go-capturer"
 )
 
 func TestRunCmd(t *testing.T) {
