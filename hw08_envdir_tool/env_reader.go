@@ -63,7 +63,6 @@ func ReadDir(dir string) (Environment, error) {
 					fmt.Printf("can not read data from %v\n", name)
 					return
 				}
-
 			}
 			mx.Lock()
 			env[name] = line

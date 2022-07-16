@@ -9,7 +9,7 @@ import (
 
 // RunCmd runs a command + arguments (cmd) with environment variables from env.
 func RunCmd(cmd []string, env Environment) (returnCode int) {
-	execCmd := exec.Command(cmd[0], cmd[1:]...)
+	execCmd := exec.Command(cmd[0], cmd[1:]...) //nolint:gosec
 	envs := make([]string, 0)
 
 	for k, v := range env {
@@ -29,8 +29,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 
-	err := execCmd.Run()
-	if err != nil {
+	if err := execCmd.Run(); err != nil {
 		fmt.Println(err)
 		return exitCode
 	}
