@@ -2,8 +2,10 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type UserRole string
@@ -36,25 +38,86 @@ type (
 	}
 )
 
-func TestValidate(t *testing.T) {
+func TestValidateStruct(t *testing.T) {
 	tests := []struct {
-		in          interface{}
-		expectedErr error
+		in              interface{}
+		expectedValErrs []error
 	}{
 		{
-			// Place your code here.
+			User{
+				"0",
+				"from Zero to Hero",
+				20,
+				"zero@hero.su",
+				"admin",
+				[]string{"79130000000", "7926", "75002222222222222222"},
+				[]byte{},
+			},
+			[]error{ErrStrLength, ErrStrLength, ErrStrLength},
 		},
-		// ...
-		// Place your code here.
+		{
+			User{
+				"123456789012345678901234567890123456", // len = 36
+				"Bobby",
+				11,
+				"bobby@hill",
+				"professor",
+				[]string{"123456789AB"},
+				[]byte{},
+			},
+			[]error{ErrIntMin, ErrStrRegexp, ErrStrIn},
+		},
+		{
+			User{
+				"123456789012345678901234567890123456", // len = 36
+				"Timotheus",
+				22,
+				"timon@server.ru",
+				"admin",
+				[]string{"123456789AB"},
+				[]byte{},
+			},
+			[]error{},
+		},
+		{
+			App{"12345"},
+			nil,
+		},
+		{
+			App{"1234"},
+			[]error{ErrStrLength},
+		},
+		{
+			Token{
+				[]byte{},
+				[]byte("empty"),
+				make([]byte, 7),
+			},
+			nil,
+		},
+		{
+			Response{200, "no matter"},
+			nil,
+		},
+		{
+			Response{202, "no matter"},
+			[]error{ErrIntIn},
+		},
 	}
-
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
-			tt := tt
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
+			test := test
 			t.Parallel()
-
-			// Place your code here.
-			_ = tt
+			var validationErrors ValidationErrors
+			errs := Validate(test.in)
+			if len(test.expectedValErrs) == 0 {
+				require.NoError(t, errs)
+				return
+			}
+			require.ErrorAs(t, errs, &validationErrors)
+			for i, e := range validationErrors {
+				require.ErrorIs(t, e.Err, test.expectedValErrs[i])
+			}
 		})
 	}
 }
