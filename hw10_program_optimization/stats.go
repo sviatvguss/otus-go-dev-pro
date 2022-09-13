@@ -1,46 +1,51 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 )
 
+//go:generate easyjson -all
 type User struct {
-	ID       int
-	Name     string
-	Username string
+	ID       int    `json:"-"`
+	Name     string `json:"-"`
+	Username string `json:"-"`
 	Email    string
-	Phone    string
-	Password string
-	Address  string
+	Phone    string `json:"-"`
+	Password string `json:"-"`
+	Address  string `json:"-"`
 }
 
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
+	user, err := getUsers(r)
 	if err != nil {
 		return nil, fmt.Errorf("get users error: %w", err)
 	}
-	return countDomains(u, domain)
+	return countDomains(user, domain)
 }
 
 type users [100_000]User
 
 func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
+	var line []byte
+	reader := bufio.NewReader(r)
+	for i := 0; ; i++ {
+		line, _, err = reader.ReadLine()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				err = nil
+				break
+			}
+			return
+		}
 		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
+		if err = user.UnmarshalJSON(line); err != nil {
 			return
 		}
 		result[i] = user
@@ -49,19 +54,12 @@ func getUsers(r io.Reader) (result users, err error) {
 }
 
 func countDomains(u users, domain string) (DomainStat, error) {
-	result := make(DomainStat)
-
+	stat := make(DomainStat)
+	re := regexp.MustCompile("\\." + domain)
 	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
-
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+		if re.Match([]byte(user.Email)) {
+			stat[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]++
 		}
 	}
-	return result, nil
+	return stat, nil
 }
