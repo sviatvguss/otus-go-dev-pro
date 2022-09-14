@@ -1,5 +1,16 @@
 [logger]
 level = "INFO"
+type = "FILE"
+directory = "logs"
 
-# TODO
-# ...
+[storage]
+type = "db"
+user = "svend"
+pass = "p@ssw0rd"
+port = 5431
+host = "127.0.0.1"
+name = "db_calendar"
+
+[server]
+host = "127.0.0.1"
+port = "8080"
